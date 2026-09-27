@@ -45,6 +45,9 @@ make build   # 需要先安装 Go 1.27+
 
 重新构建前端（改动 `web/` 后）：`make web`（需要 Node 20+）。
 
+也可以直接从 [GitHub Releases](https://github.com/linuxsuren/open-pdf/releases) 下载对应平台的
+二进制（linux/darwin × amd64/arm64、windows/amd64，发布时由 CI 自动构建并附带 sha256 校验）。
+
 ## Web 界面
 
 界面提供全部功能的操作面板：拖拽上传、文件排序、压缩前后体积对比、

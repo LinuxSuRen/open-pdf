@@ -228,6 +228,16 @@ pre.json {
 .settings { display: flex; gap: 8px; align-items: center; }
 .settings input { background: #1b2740; border-color: #2c3a5c; color: #e7ecf7; min-width: 200px; }
 
+.header .gh {
+  display: flex;
+  align-items: center;
+  color: #aab4cc;
+  padding: 4px 6px;
+  border-radius: 7px;
+  transition: color .15s, background .15s;
+}
+.header .gh:hover { color: #fff; background: #1b2740; }
+
 footer.site {
   text-align: center;
   color: #9aa3b5;

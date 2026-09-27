@@ -1,0 +1,101 @@
+name: Release
+
+# Release 事件触发：为所有支持平台交叉编译静态二进制，
+# 打包（含 README/LICENSE）与 sha256 校验文件后统一上传到该 Release。
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  binaries:
+    name: Build ${{ matrix.os }}/${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: linux, arch: amd64 }
+          - { os: linux, arch: arm64 }
+          - { os: darwin, arch: amd64 }
+          - { os: darwin, arch: arm64 }
+          - { os: windows, arch: amd64 }
+    steps:
+      - uses: actions/checkout@v4
+
+      # 前端构建（产物 web/dist 会被嵌入 Go 二进制）
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --no-audit --no-fund
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.27"
+          cache-dependency-path: go.sum
+
+      - name: Build binary
+        env:
+          CGO_ENABLED: "0"
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME}"
+          OUT=open-pdf
+          if [ "${{ matrix.os }}" = "windows" ]; then OUT=open-pdf.exe; fi
+          go build -trimpath \
+            -ldflags "-s -w -X github.com/linuxsuren/open-pdf/internal/buildinfo.Version=${VERSION}" \
+            -o "build/${OUT}" ./cmd/open-pdf
+
+      - name: Package
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME}"
+          OS="${{ matrix.os }}"
+          ARCH="${{ matrix.arch }}"
+          mkdir -p dist stage
+          cp README.md LICENSE stage/
+          if [ "$OS" = "windows" ]; then
+            cp build/open-pdf.exe stage/
+            (cd stage && zip -q -r "../dist/open-pdf_${VERSION}_${OS}_${ARCH}.zip" .)
+          else
+            cp build/open-pdf stage/
+            (cd stage && tar -czf "../dist/open-pdf_${VERSION}_${OS}_${ARCH}.tar.gz" .)
+          fi
+          cd dist
+          for f in *; do sha256sum "$f" > "${f}.sha256"; done
+          ls -l
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: open-pdf-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Upload release assets
+    needs: binaries
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: open-pdf-*
+          merge-multiple: true
+          path: assets
+
+      - name: List assets
+        run: ls -l assets
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: assets/*
