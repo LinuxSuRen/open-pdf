@@ -27,7 +27,7 @@ async function submit() {
   try {
     const fields = {
       type: type.value,
-      pages,
+      pages: pages.value,
       rotation: rotation.value === '' ? '' : String(rotation.value),
       opacity: opacity.value === '' ? '' : String(opacity.value),
       fontsize: fontsize.value === '' ? '' : String(fontsize.value),

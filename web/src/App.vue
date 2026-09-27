@@ -31,11 +31,22 @@ async function ping() {
     health.value = 'down'
   }
 }
+
+// Keep accidental file drops outside a dropzone from navigating the app away.
+function swallowDrag(e) {
+  e.preventDefault()
+}
 onMounted(() => {
+  window.addEventListener('dragover', swallowDrag)
+  window.addEventListener('drop', swallowDrag)
   ping()
   timer = setInterval(ping, 30_000)
 })
-onUnmounted(() => clearInterval(timer))
+onUnmounted(() => {
+  clearInterval(timer)
+  window.removeEventListener('dragover', swallowDrag)
+  window.removeEventListener('drop', swallowDrag)
+})
 
 const showSettings = ref(false)
 const tokenInput = ref(getToken())

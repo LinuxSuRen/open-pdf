@@ -42,7 +42,13 @@ export async function postFiles(path, { files = [], fields = {} } = {}) {
     form.append(f.field || 'file', f.file, f.name || f.file.name)
   }
   for (const [k, v] of Object.entries(fields)) {
-    if (v !== undefined && v !== null && v !== '') form.append(k, String(v))
+    if (v === undefined || v === null || v === '') continue
+    if (typeof v === 'object') {
+      // Guard against ref/composite values leaking into the request and
+      // surfacing as "[object Object]" server errors.
+      throw new Error(`字段 ${k} 的值不是文本/数字（可能是未取 .value 的响应式对象）`)
+    }
+    form.append(k, String(v))
   }
   const headers = {}
   const token = getToken()
