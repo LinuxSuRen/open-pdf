@@ -1,0 +1,18 @@
+# local tool caches
+.cache/
+
+# build outputs
+bin/
+build/
+
+# frontend dependencies (web/dist is committed on purpose: it is embedded
+# into the Go binary and keeps pure-Go checkouts buildable)
+web/node_modules/
+
+# editors / OS
+.idea/
+.vscode/
+.DS_Store
+
+# runtime scratch
+*.log

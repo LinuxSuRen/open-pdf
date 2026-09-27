@@ -1,0 +1,28 @@
+# 生产可用的单服务编排示例：
+#   docker compose up -d --build
+# 然后访问 http://localhost:8080/ 使用 Web 界面。
+services:
+  open-pdf:
+    build: .
+    image: open-pdf:latest
+    container_name: open-pdf
+    ports:
+      - "8080:8080"
+    environment:
+      # 打开后所有 /api 请求都需要 Authorization: Bearer <token>
+      OPEN_PDF_API_TOKEN: ""
+      OPEN_PDF_MAX_UPLOAD_MB: "256"
+      OPEN_PDF_MAX_FILES: "20"
+      OPEN_PDF_LOG_JSON: "true"
+    # 健康检查由镜像内置的 open-pdf -self-check 完成
+    restart: unless-stopped
+    # 基础加固：只读根文件系统 + 内存限制
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 1g

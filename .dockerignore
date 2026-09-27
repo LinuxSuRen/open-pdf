@@ -1,0 +1,9 @@
+.git
+.cache
+bin
+build
+web/node_modules
+web/dist
+docker-compose.yml
+*.md
+!README.md
