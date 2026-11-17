@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -305,6 +306,93 @@ func (s *Server) handleDecrypt(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s.serveResult(w, r, out, in.Name)
+	})
+}
+
+// handleMarkdown converts a markdown document to PDF.
+//
+//	POST /api/v1/markdown
+//	  file: the .md document (mutually exclusive with text, file wins)
+//	  text: markdown source text
+//	  file parts (any name): image assets referenced by relative name
+//	  page_size: a4|a3|a5|letter|legal (default a4)
+//	  orientation: portrait|landscape
+//	  margin: page margin in mm (default 18)
+//	  font_size: body font size in pt (default 11)
+//	  output: download file name (default derived from the source name)
+func (s *Server) handleMarkdown(w http.ResponseWriter, r *http.Request) {
+	s.withRequestScope(w, r, func(dir string, files []uploadedFile, values url.Values) {
+		var source []byte
+		var mdName string
+		assets := map[string]string{}
+		for _, f := range files {
+			switch {
+			case pdfops.IsMarkdownFile(f.Name):
+				if source != nil {
+					writeError(w, r, http.StatusBadRequest, "too_many_files",
+						"只能提供一个 Markdown 文件")
+					return
+				}
+				b, err := os.ReadFile(f.Path)
+				if err != nil {
+					s.log.Error("read markdown upload", "err", err)
+					writeError(w, r, http.StatusInternalServerError, "internal", "无法读取上传的文件")
+					return
+				}
+				source, mdName = b, f.Name
+			case pdfops.IsImageFile(f.Name):
+				assets[f.Name] = f.Path
+			default:
+				writeError(w, r, http.StatusUnsupportedMediaType, "unsupported_file_type",
+					fmt.Sprintf("文件 %q 的类型不受支持", f.Name))
+				return
+			}
+		}
+		if len(source) == 0 && values.Get("text") != "" {
+			source = []byte(values.Get("text"))
+		}
+		if len(source) == 0 {
+			s.mapOpError(w, r, fmt.Errorf("%w: 需要上传 Markdown 文件或填写 text 内容",
+				pdfops.ErrMissingParam))
+			return
+		}
+
+		opts := pdfops.MarkdownOptions{
+			Source:      source,
+			PageSize:    values.Get("page_size"),
+			Orientation: values.Get("orientation"),
+			Assets:      assets,
+		}
+		if v, ok, err := formFloat(values, "margin"); err != nil {
+			s.mapOpError(w, r, err)
+			return
+		} else if ok {
+			opts.MarginMM = v
+		}
+		if v, ok, err := formFloat(values, "font_size"); err != nil {
+			s.mapOpError(w, r, err)
+			return
+		} else if ok {
+			opts.FontSize = v
+		}
+
+		fallback := "document"
+		if mdName != "" {
+			fallback = strings.TrimSuffix(mdName, filepath.Ext(mdName))
+		}
+		name := outputName(values.Get("output"), fallback, ".pdf")
+		out := filepath.Join(dir, name)
+		if err := pdfops.RenderMarkdown(out, opts); err != nil {
+			if errors.Is(err, pdfops.ErrRenderFailed) {
+				s.log.Error("markdown render failed", "err", err)
+				writeError(w, r, http.StatusInternalServerError, "render_failed",
+					"Markdown 转换失败，请检查文档内容后重试")
+				return
+			}
+			s.mapOpError(w, r, err)
+			return
+		}
+		s.serveResult(w, r, out, name)
 	})
 }
 

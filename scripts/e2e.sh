@@ -118,6 +118,33 @@ N=$(page_count "$WORK/rot.pdf")
 [ "$N" = "3" ] || fail "旋转后页数 $N"
 ok "旋转 90°"
 
+# ---------- Markdown 转 PDF ----------
+curl -sf -o "$WORK/md-text.pdf" -F 'text=# 冒烟文档
+
+中文段落 **加粗**、`make build` 与 [链接](https://github.com/LinuxSuRen/open-pdf)。
+
+- 列表项一
+- 列表项二
+
+| 功能 | 状态 |
+| --- | --- |
+| Markdown | 已支持 |
+' -F page_size=a4 "$BASE/api/v1/markdown" || fail "Markdown text 转换失败"
+head -c 5 "$WORK/md-text.pdf" | grep -q '%PDF' || fail "Markdown 输出不是 PDF"
+N=$(page_count "$WORK/md-text.pdf")
+[ "$N" -ge 1 ] || fail "Markdown 输出无页面"
+ok "Markdown 转 PDF (text, 页数=$N)"
+
+printf '# 图片引用\n\n![photo](photo.png)\n' > "$WORK/doc.md"
+curl -sf -o "$WORK/md-file.pdf" -F file=@"$WORK/doc.md" -F asset=@"$WORK/fx/photo.png" \
+  -F orientation=landscape "$BASE/api/v1/markdown" || fail "Markdown 文件转换失败"
+head -c 5 "$WORK/md-file.pdf" | grep -q '%PDF' || fail "Markdown 文件输出不是 PDF"
+ok "Markdown 转 PDF (文件 + 图片 + 横向)"
+
+STATUS=$(curl -s -o /dev/null -w '%{http_code}' -F page_size=b6 -F text=x "$BASE/api/v1/markdown")
+[ "$STATUS" = "400" ] || fail "Markdown 非法纸张应 400，实际 $STATUS"
+ok "Markdown 非法参数 → 400"
+
 # ---------- 加密 / 解密 ----------
 curl -sf -o "$WORK/enc.pdf" -F file=@"$WORK/fx/sample.pdf" -F password=e2epass \
   "$BASE/api/v1/encrypt" || fail "加密失败"

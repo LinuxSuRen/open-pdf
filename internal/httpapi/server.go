@@ -58,6 +58,7 @@ func (s *Server) routes() {
 	m.HandleFunc("POST /api/v1/info", s.requireJSON(s.handleInfo))
 	m.HandleFunc("POST /api/v1/encrypt", s.requireJSON(s.handleEncrypt))
 	m.HandleFunc("POST /api/v1/decrypt", s.requireJSON(s.handleDecrypt))
+	m.HandleFunc("POST /api/v1/markdown", s.requireJSON(s.handleMarkdown))
 	m.HandleFunc("GET /api", s.handleAPIIndex)
 	m.HandleFunc("GET /assets/{path...}", s.handleAsset)
 	m.HandleFunc("GET /{$}", s.handleIndex)
@@ -106,6 +107,7 @@ func (s *Server) handleAPIIndex(w http.ResponseWriter, r *http.Request) {
 			"POST /api/v1/info",
 			"POST /api/v1/encrypt",
 			"POST /api/v1/decrypt",
+			"POST /api/v1/markdown",
 		},
 	})
 }
@@ -150,17 +152,18 @@ func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
 // knownRoutes documents the method map used for 405 detection. It mirrors
 // the patterns registered in routes().
 var knownRoutes = map[string][]string{
-	"/healthz":            {"GET"},
-	"/api":                {"GET"},
-	"/api/v1/version":     {"GET"},
-	"/api/v1/merge":       {"POST"},
-	"/api/v1/split":       {"POST"},
-	"/api/v1/compress":    {"POST"},
-	"/api/v1/watermark":   {"POST"},
-	"/api/v1/rotate":      {"POST"},
-	"/api/v1/info":        {"POST"},
-	"/api/v1/encrypt":     {"POST"},
-	"/api/v1/decrypt":     {"POST"},
+	"/healthz":          {"GET"},
+	"/api":              {"GET"},
+	"/api/v1/version":   {"GET"},
+	"/api/v1/merge":     {"POST"},
+	"/api/v1/split":     {"POST"},
+	"/api/v1/compress":  {"POST"},
+	"/api/v1/watermark": {"POST"},
+	"/api/v1/rotate":    {"POST"},
+	"/api/v1/info":      {"POST"},
+	"/api/v1/encrypt":   {"POST"},
+	"/api/v1/decrypt":   {"POST"},
+	"/api/v1/markdown":  {"POST"},
 }
 
 // handleAsset serves the hashed Vite build artifacts immutably.

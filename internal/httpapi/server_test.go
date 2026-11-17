@@ -628,6 +628,74 @@ func TestAuth(t *testing.T) {
 	}
 }
 
+func TestMarkdownEndpoint(t *testing.T) {
+	ts := newTestServer(t, nil)
+
+	// Inline text.
+	body, ct := upload(t, nil, map[string]string{
+		"text": "# 标题\n\n中文段落 **加粗** 与 [链接](https://example.com)\n",
+	})
+	resp := doPost(ts, "/api/v1/markdown", body, ct)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("markdown status = %d: %v", resp.StatusCode, errBody(t, resp))
+	}
+	if n := countPages(t, resp); n != 1 {
+		t.Fatalf("pages = %d, want 1", n)
+	}
+	if cd := resp.Header.Get("Content-Disposition"); !strings.Contains(cd, "document.pdf") {
+		t.Fatalf("content disposition = %q", cd)
+	}
+}
+
+func TestMarkdownFileWithImage(t *testing.T) {
+	ts := newTestServer(t, nil)
+
+	var md bytes.Buffer
+	md.WriteString("# 带图文档\n\n![shot](shot.png)\n")
+	body, ct := upload(t, []filePart{
+		{"file", "doc.md", md.Bytes()},
+		{"asset", "shot.png", pngFixture(t)},
+	}, map[string]string{"page_size": "letter"})
+	resp := doPost(ts, "/api/v1/markdown", body, ct)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("markdown file status = %d: %v", resp.StatusCode, errBody(t, resp))
+	}
+	if n := countPages(t, resp); n != 1 {
+		t.Fatalf("pages = %d, want 1", n)
+	}
+	if cd := resp.Header.Get("Content-Disposition"); !strings.Contains(cd, "doc.pdf") {
+		t.Fatalf("content disposition = %q", cd)
+	}
+}
+
+func TestMarkdownErrors(t *testing.T) {
+	ts := newTestServer(t, nil)
+
+	cases := []struct {
+		name   string
+		files  []filePart
+		fields map[string]string
+		status int
+		code   string
+	}{
+		{"no input", nil, nil, http.StatusBadRequest, "missing_parameter"},
+		{"bad page size", nil, map[string]string{"text": "x", "page_size": "b6"}, http.StatusBadRequest, "invalid_parameter"},
+		{"bad margin", nil, map[string]string{"text": "x", "margin": "1"}, http.StatusBadRequest, "invalid_parameter"},
+		{"bad orientation", nil, map[string]string{"text": "x", "orientation": "up"}, http.StatusBadRequest, "invalid_parameter"},
+		{"pdf not allowed", []filePart{{"file", "doc.pdf", pdfFixture(t, 1)}}, nil, http.StatusUnsupportedMediaType, "unsupported_file_type"},
+	}
+	for _, tc := range cases {
+		body, ct := upload(t, tc.files, tc.fields)
+		resp := doPost(ts, "/api/v1/markdown", body, ct)
+		if resp.StatusCode != tc.status {
+			t.Fatalf("%s: status = %d, want %d (%v)", tc.name, resp.StatusCode, tc.status, errBody(t, resp))
+		}
+		if e := errBody(t, resp); e["code"] != tc.code {
+			t.Fatalf("%s: code = %v, want %s", tc.name, e["code"], tc.code)
+		}
+	}
+}
+
 func TestCORS(t *testing.T) {
 	ts := newTestServer(t, func(c *config.Config) { c.CORSOrigins = []string{"https://example.com"} })
 
