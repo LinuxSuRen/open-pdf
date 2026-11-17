@@ -232,6 +232,16 @@ curl -o doc.pdf -F file=@README.md -F asset=@screenshot.png \
 最终镜像只包含一个静态二进制 + 可写的 `/tmp`，以非 root（UID 65534）运行，
 内置 Docker 健康检查（`open-pdf -self-check`，无需 wget/curl）。
 
+Release 发布时 CI 自动构建多架构镜像并推送 GHCR（与二进制同版本同源）：
+
+```bash
+docker run --rm -p 8080:8080 --tmpfs /tmp ghcr.io/linuxsuren/open-pdf:latest
+```
+
+标签规则：`latest`（最新正式版）、`v0.0.2` / `0.0.2` / `0.0`（语义化版本）、
+`sha-xxxxxxx`（按提交）、`master`（主干最新）。首次推送后请在 GitHub
+Packages 设置中将 `open-pdf` 包设为公开。
+
 国内网络环境可覆盖基础镜像与 Go 模块代理：
 
 ```bash
