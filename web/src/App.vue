@@ -8,6 +8,7 @@ import WatermarkPanel from './components/WatermarkPanel.vue'
 import RotatePanel from './components/RotatePanel.vue'
 import InfoPanel from './components/InfoPanel.vue'
 import CryptPanel from './components/CryptPanel.vue'
+import MarkdownPanel from './components/MarkdownPanel.vue'
 
 const tabs = [
   { id: 'merge', label: '合并', comp: MergePanel },
@@ -15,10 +16,12 @@ const tabs = [
   { id: 'compress', label: '压缩', comp: CompressPanel },
   { id: 'watermark', label: '水印', comp: WatermarkPanel },
   { id: 'rotate', label: '旋转', comp: RotatePanel },
+  { id: 'markdown', label: 'Markdown', comp: MarkdownPanel },
   { id: 'info', label: '信息', comp: InfoPanel },
   { id: 'crypt', label: '加密 / 解密', comp: CryptPanel },
 ]
-const active = ref(tabs[0].id)
+const initialTab = window.location.hash.replace('#', '')
+const active = ref(tabs.some((t) => t.id === initialTab) ? initialTab : tabs[0].id)
 const activeComp = computed(() => tabs.find((t) => t.id === active.value).comp)
 
 const health = ref('unknown')

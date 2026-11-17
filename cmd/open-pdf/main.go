@@ -20,6 +20,12 @@ import (
 )
 
 func main() {
+	// Subcommand style: `open-pdf version` (preferred over the flag below).
+	if len(os.Args) > 1 && os.Args[1] == "version" {
+		fmt.Printf("open-pdf %s (commit %s, built %s)\n", buildinfo.Version, buildinfo.Commit, buildinfo.Date)
+		return
+	}
+
 	var (
 		showVersion bool
 		selfCheck   bool

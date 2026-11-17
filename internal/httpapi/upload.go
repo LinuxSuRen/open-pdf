@@ -90,10 +90,10 @@ func (s *Server) parseUpload(r *http.Request, dir string) ([]uploadedFile, url.V
 			return nil, nil, uploadErr(http.StatusBadRequest, "bad_filename",
 				"file part has an unusable name")
 		}
-		if !pdfops.IsPDFFile(name) && !pdfops.IsImageFile(name) {
+		if !pdfops.IsPDFFile(name) && !pdfops.IsImageFile(name) && !pdfops.IsMarkdownFile(name) {
 			return nil, nil, &uploadError{
 				status: http.StatusUnsupportedMediaType, code: "unsupported_file_type",
-				err: fmt.Errorf("file %q: unsupported type (supported: pdf, png, jpg, jpeg, webp, tif, tiff)",
+				err: fmt.Errorf("file %q: unsupported type (supported: pdf, png, jpg, jpeg, webp, tif, tiff, md)",
 					name),
 			}
 		}

@@ -238,6 +238,20 @@ pre.json {
 }
 .header .gh:hover { color: #fff; background: #1b2740; }
 
+.md-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  background: #fff;
+  color: var(--ink);
+  resize: vertical;
+  line-height: 1.6;
+}
+.md-input:focus { outline: 2px solid #c6d4ff; border-color: var(--brand); }
+
 footer.site {
   text-align: center;
   color: #9aa3b5;

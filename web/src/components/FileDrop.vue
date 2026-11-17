@@ -57,6 +57,7 @@ function extOf(name) {
 function iconFor(name) {
   const ext = extOf(name)
   if (ext === 'pdf') return '📄'
+  if (ext === 'md' || ext === 'markdown') return '📝'
   return '🖼️'
 }
 
