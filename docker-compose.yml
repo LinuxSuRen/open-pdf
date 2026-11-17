@@ -1,10 +1,11 @@
 # 生产可用的单服务编排示例：
-#   docker compose up -d --build
+#   docker compose up -d --build          # 本地构建
+#   docker compose up -d                  # 直接使用 GHCR 已发布镜像
 # 然后访问 http://localhost:8080/ 使用 Web 界面。
 services:
   open-pdf:
     build: .
-    image: open-pdf:latest
+    image: ghcr.io/linuxsuren/open-pdf:latest
     container_name: open-pdf
     ports:
       - "8080:8080"
