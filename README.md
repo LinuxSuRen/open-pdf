@@ -215,6 +215,7 @@ curl -o doc.pdf -F file=@README.md -F asset=@screenshot.png \
 | 变量 | 默认值 | 说明 |
 | --- | --- | --- |
 | `OPEN_PDF_ADDR` | `:8080` | 监听地址 |
+| `OPEN_PDF_PORT_DRIFT` | `true` | 端口漂移：端口被占用时自动尝试后续端口（最多 20 个）并输出漂移日志；`false` 时端口被占直接启动失败 |
 | `OPEN_PDF_API_TOKEN` | 空 | 设置后 API 需要 `Authorization: Bearer <token>`（`/healthz` 除外） |
 | `OPEN_PDF_MAX_UPLOAD_MB` | `512` | 单请求体积上限（MB） |
 | `OPEN_PDF_MAX_FILES` | `20` | 单请求文件数上限 |

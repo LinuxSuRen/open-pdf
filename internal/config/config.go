@@ -18,6 +18,9 @@ const EnvPrefix = "OPEN_PDF_"
 type Config struct {
 	// Addr is the listen address, for example ":8080".
 	Addr string
+	// PortDrift lets the server fall back to subsequent ports when the
+	// configured one is occupied (default: on).
+	PortDrift bool
 	// MaxUploadBytes caps the total size of one request body (uploads included).
 	MaxUploadBytes int64
 	// MaxFiles caps the number of file parts accepted in one request.
@@ -44,6 +47,7 @@ type Config struct {
 func Load() (*Config, error) {
 	cfg := &Config{
 		Addr:            envString("ADDR", ":8080"),
+		PortDrift:       envBool("PORT_DRIFT", true),
 		MaxUploadBytes:  int64(envInt("MAX_UPLOAD_MB", 512)) * 1024 * 1024,
 		MaxFiles:        envInt("MAX_FILES", 20),
 		APIToken:        envString("API_TOKEN", ""),
