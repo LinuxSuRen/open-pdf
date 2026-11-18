@@ -17,6 +17,7 @@ import (
 	"github.com/linuxsuren/open-pdf/internal/buildinfo"
 	"github.com/linuxsuren/open-pdf/internal/config"
 	"github.com/linuxsuren/open-pdf/internal/httpapi"
+	"github.com/linuxsuren/open-pdf/internal/listenport"
 )
 
 func main() {
@@ -68,8 +69,21 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Acquire the listener up front so port drift can pick a free port
+	// before the server starts serving.
+	listenRes, err := listenport.Listen(cfg.Addr, cfg.PortDrift)
+	if err != nil {
+		log.Error("监听失败", "addr", cfg.Addr, "err", err)
+		os.Exit(1)
+	}
+	if listenRes.Drifted {
+		log.Warn("配置端口被占用，已自动漂移",
+			"configured", cfg.Addr,
+			"addr", listenRes.Addr,
+			"skipped", listenRes.Attempts)
+	}
+
 	httpSrv := &http.Server{
-		Addr:              cfg.Addr,
 		Handler:           srv.Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       cfg.ReadTimeout,
@@ -79,8 +93,8 @@ func main() {
 
 	serverErr := make(chan error, 1)
 	go func() {
-		log.Info("open-pdf listening", "addr", cfg.Addr, "version", buildinfo.Version)
-		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Info("open-pdf listening", "addr", listenRes.Addr, "version", buildinfo.Version)
+		if err := httpSrv.Serve(listenRes.Listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErr <- err
 		}
 	}()
