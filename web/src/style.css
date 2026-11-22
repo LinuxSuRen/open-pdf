@@ -93,7 +93,7 @@ body {
 .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field label { font-size: 12px; color: var(--muted); }
-input[type='text'], input[type='number'], input[type='password'], select {
+input[type='text'], input[type='number'], input[type='password'], input[type='url'], select {
   border: 1px solid var(--line);
   border-radius: 7px;
   padding: 8px 10px;
@@ -251,6 +251,40 @@ pre.json {
   line-height: 1.6;
 }
 .md-input:focus { outline: 2px solid #c6d4ff; border-color: var(--brand); }
+
+/* ---------- markdown source mode switch ---------- */
+.mode-switch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f0f3f9;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+.mode-switch button {
+  border: 0;
+  background: transparent;
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+}
+.mode-switch button:hover { color: var(--ink); }
+.mode-switch button.active {
+  background: var(--card);
+  color: var(--brand);
+  font-weight: 500;
+  box-shadow: 0 1px 2px rgba(16, 25, 46, .1);
+}
+
+.md-link {
+  width: 100%;
+  font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+}
+.field-hint { font-size: 12px; color: #9aa3b5; }
 
 footer.site {
   text-align: center;

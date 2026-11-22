@@ -18,7 +18,7 @@
 | 旋转 | 按 90° 整数倍旋转全部或指定页面 |
 | 信息 | 页数、PDF 版本、页面尺寸、元数据、加密 / 水印 / 书签状态 |
 | 加密 / 解密 | AES-128 / AES-256 口令保护与解除 |
-| Markdown 转 PDF | 标题、列表、表格、代码块、引用、链接、图片，内嵌 Noto Sans SC 中文字体，子集化后文档仅几十 KB |
+| Markdown 转 PDF | 本地上传 / 粘贴文本 / 文件链接三种输入；标题、列表、表格、代码块、引用、链接、图片，内嵌 Noto Sans SC 中文字体，子集化后文档仅几十 KB |
 
 ## 快速开始
 
@@ -180,14 +180,15 @@ curl -o dec.pdf -F file=@enc.pdf -F password=s3cret \
 
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
-| `file` | file | `.md` 文档，与 `text` 二选一，文件优先 |
-| `text` | string | Markdown 文本内容 |
+| `file` | file | `.md` 文档，与 `text` / `url` 三选一，文件优先 |
+| `text` | string | Markdown 文本内容，优先级高于 `url` |
+| `url` | string | Markdown 文件的 `http(s)` 链接，由服务端下载（20 秒超时、8 MB 上限） |
 | file 任意字段名 | file | 引用的图片资源，按文件名匹配 `![](shot.png)` |
 | `page_size` | string | `a4` 默认 / `a3` / `a5` / `letter` / `legal` |
 | `orientation` | string | `portrait` 默认 / `landscape` |
 | `margin` | float | 页边距毫米，默认 18 |
 | `font_size` | float | 正文字号磅，默认 11 |
-| `output` | string | 下载文件名，默认取自文档名 |
+| `output` | string | 下载文件名，默认取自文档名或链接路径 |
 
 支持 CommonMark 与 GFM 表格 / 删除线；内嵌 Noto Sans SC（OFL 1.1），字体子集化后输出通常只有几十 KB；链接可点击，图片缺失时以占位文字降级。
 
@@ -199,6 +200,10 @@ curl -o doc.pdf -F text='# 你好
 
 # 上传 .md 并内嵌图片
 curl -o doc.pdf -F file=@README.md -F asset=@screenshot.png \
+  http://localhost:8080/api/v1/markdown
+
+# 从链接转换（服务端下载）
+curl -o doc.pdf -F url=https://example.com/README.md \
   http://localhost:8080/api/v1/markdown
 ```
 
