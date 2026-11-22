@@ -36,7 +36,8 @@ async function toApiError(resp) {
 
 // postFiles sends files and scalar fields as multipart/form-data and either
 // returns the response blob (binary endpoints) or parsed JSON (info).
-export async function postFiles(path, { files = [], fields = {} } = {}) {
+// An optional AbortSignal cancels the in-flight fetch.
+export async function postFiles(path, { files = [], fields = {}, signal } = {}) {
   const form = new FormData()
   for (const f of files) {
     form.append(f.field || 'file', f.file, f.name || f.file.name)
@@ -53,7 +54,7 @@ export async function postFiles(path, { files = [], fields = {} } = {}) {
   const headers = {}
   const token = getToken()
   if (token) headers['Authorization'] = `Bearer ${token}`
-  const resp = await fetch(path, { method: 'POST', headers, body: form })
+  const resp = await fetch(path, { method: 'POST', headers, body: form, signal })
   if (!resp.ok) throw await toApiError(resp)
   return resp
 }

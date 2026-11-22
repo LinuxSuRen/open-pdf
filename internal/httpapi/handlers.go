@@ -312,8 +312,9 @@ func (s *Server) handleDecrypt(w http.ResponseWriter, r *http.Request) {
 // handleMarkdown converts a markdown document to PDF.
 //
 //	POST /api/v1/markdown
-//	  file: the .md document (mutually exclusive with text, file wins)
-//	  text: markdown source text
+//	  file: the .md document (wins over text and url)
+//	  text: markdown source text (wins over url)
+//	  url: http(s) link to a markdown document, fetched server-side
 //	  file parts (any name): image assets referenced by relative name
 //	  page_size: a4|a3|a5|letter|legal (default a4)
 //	  orientation: portrait|landscape
@@ -352,7 +353,26 @@ func (s *Server) handleMarkdown(w http.ResponseWriter, r *http.Request) {
 			source = []byte(values.Get("text"))
 		}
 		if len(source) == 0 {
-			s.mapOpError(w, r, fmt.Errorf("%w: 需要上传 Markdown 文件或填写 text 内容",
+			if raw := values.Get("url"); raw != "" {
+				b, name, err := fetchMarkdown(r.Context(), raw)
+				var fe *mdFetchError
+				if errors.As(err, &fe) {
+					if fe.cause != nil {
+						s.log.Error("fetch markdown url", "err", fe.cause)
+					}
+					writeError(w, r, fe.status, fe.code, fe.msg)
+					return
+				}
+				if err != nil {
+					s.log.Error("fetch markdown url", "err", err)
+					writeError(w, r, http.StatusInternalServerError, "internal", "无法下载链接指向的文件")
+					return
+				}
+				source, mdName = b, name
+			}
+		}
+		if len(source) == 0 {
+			s.mapOpError(w, r, fmt.Errorf("%w: 需要上传 Markdown 文件、填写 text 内容或提供 url 链接",
 				pdfops.ErrMissingParam))
 			return
 		}

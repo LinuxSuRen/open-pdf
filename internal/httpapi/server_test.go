@@ -696,6 +696,63 @@ func TestMarkdownErrors(t *testing.T) {
 	}
 }
 
+func TestMarkdownFromURL(t *testing.T) {
+	src := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/docs/intro.md":
+			w.Header().Set("Content-Type", "text/markdown")
+			_, _ = w.Write([]byte("# 链接文档\n\n来自 URL 的内容 **加粗**。\n"))
+		case "/docs/blank.md":
+			_, _ = w.Write([]byte("  \n \t"))
+		case "/docs/private.md":
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte("forbidden"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(src.Close)
+	ts := newTestServer(t, nil)
+
+	// Happy path: the document is fetched and converted; the output name
+	// comes from the URL path.
+	body, ct := upload(t, nil, map[string]string{"url": src.URL + "/docs/intro.md"})
+	resp := doPost(ts, "/api/v1/markdown", body, ct)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("markdown url status = %d: %v", resp.StatusCode, errBody(t, resp))
+	}
+	if n := countPages(t, resp); n != 1 {
+		t.Fatalf("pages = %d, want 1", n)
+	}
+	if cd := resp.Header.Get("Content-Disposition"); !strings.Contains(cd, "intro.pdf") {
+		t.Fatalf("content disposition = %q", cd)
+	}
+
+	cases := []struct {
+		name   string
+		url    string
+		status int
+		code   string
+	}{
+		{"not found", src.URL + "/docs/missing.md", http.StatusBadGateway, "fetch_failed"},
+		{"forbidden", src.URL + "/docs/private.md", http.StatusBadGateway, "fetch_failed"},
+		{"connection refused", "http://127.0.0.1:1/doc.md", http.StatusBadGateway, "fetch_failed"},
+		{"blank document", src.URL + "/docs/blank.md", http.StatusBadRequest, "empty_document"},
+		{"bad scheme", "ftp://example.com/a.md", http.StatusBadRequest, "bad_url"},
+		{"not a url", "example.com/readme.md", http.StatusBadRequest, "bad_url"},
+	}
+	for _, tc := range cases {
+		body, ct := upload(t, nil, map[string]string{"url": tc.url})
+		resp := doPost(ts, "/api/v1/markdown", body, ct)
+		if resp.StatusCode != tc.status {
+			t.Fatalf("%s: status = %d, want %d (%v)", tc.name, resp.StatusCode, tc.status, errBody(t, resp))
+		}
+		if e := errBody(t, resp); e["code"] != tc.code {
+			t.Fatalf("%s: code = %v, want %s", tc.name, e["code"], tc.code)
+		}
+	}
+}
+
 func TestCORS(t *testing.T) {
 	ts := newTestServer(t, func(c *config.Config) { c.CORSOrigins = []string{"https://example.com"} })
 
