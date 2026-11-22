@@ -24,6 +24,18 @@ const initialTab = window.location.hash.replace('#', '')
 const active = ref(tabs.some((t) => t.id === initialTab) ? initialTab : tabs[0].id)
 const activeComp = computed(() => tabs.find((t) => t.id === active.value).comp)
 
+// Keep the chosen tab in the URL so a refresh (or a shared link) reopens
+// the same view; replaceState avoids one history entry per click.
+function selectTab(id) {
+  if (id === active.value) return
+  active.value = id
+  history.replaceState(null, '', '#' + id)
+}
+function onHashChange() {
+  const id = window.location.hash.replace('#', '')
+  if (tabs.some((t) => t.id === id)) selectTab(id)
+}
+
 const health = ref('unknown')
 let timer = null
 async function ping() {
@@ -42,6 +54,7 @@ function swallowDrag(e) {
 onMounted(() => {
   window.addEventListener('dragover', swallowDrag)
   window.addEventListener('drop', swallowDrag)
+  window.addEventListener('hashchange', onHashChange)
   ping()
   timer = setInterval(ping, 30_000)
 })
@@ -49,6 +62,7 @@ onUnmounted(() => {
   clearInterval(timer)
   window.removeEventListener('dragover', swallowDrag)
   window.removeEventListener('drop', swallowDrag)
+  window.removeEventListener('hashchange', onHashChange)
 })
 
 const showSettings = ref(false)
@@ -89,7 +103,7 @@ function saveToken() {
 
   <main class="layout">
     <nav class="tabs">
-      <button v-for="t in tabs" :key="t.id" :class="{ active: active === t.id }" @click="active = t.id">
+      <button v-for="t in tabs" :key="t.id" :class="{ active: active === t.id }" @click="selectTab(t.id)">
         {{ t.label }}
       </button>
     </nav>

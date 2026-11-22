@@ -10,7 +10,26 @@ const modes = [
   { id: 'paste', label: '粘贴文本' },
   { id: 'link', label: '文件链接' },
 ]
-const mode = ref('upload')
+const MODE_KEY = 'openpdf.md-mode'
+
+// Keep the chosen mode across refreshes (session storage, so a shared URL
+// still opens the default view for others).
+function storedMode() {
+  try {
+    const v = sessionStorage.getItem(MODE_KEY)
+    return modes.some((m) => m.id === v) ? v : 'upload'
+  } catch {
+    return 'upload'
+  }
+}
+const mode = ref(storedMode())
+watch(mode, (m) => {
+  try {
+    sessionStorage.setItem(MODE_KEY, m)
+  } catch {
+    /* storage unavailable (private mode); persistence is best-effort */
+  }
+})
 
 const mdFiles = ref([])
 const text = ref('')
