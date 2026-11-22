@@ -231,6 +231,7 @@ curl -o doc.pdf -F url=https://example.com/README.md \
 | `OPEN_PDF_IDLE_TIMEOUT_SEC` | `120` | Keep-alive 超时 |
 | `OPEN_PDF_SHUTDOWN_TIMEOUT_SEC` | `20` | 优雅退出超时 |
 | `OPEN_PDF_LOG_JSON` | `false` | 结构化 JSON 日志 |
+| `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` | 空 | 标准代理环境变量，服务端拉取 `url` 链接时生效；服务所在网络无法直连外网（如 `raw.githubusercontent.com` 被拦截）时配置，例如 `HTTPS_PROXY=http://127.0.0.1:7890` |
 
 ## 容器部署
 

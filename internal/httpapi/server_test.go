@@ -704,6 +704,9 @@ func TestMarkdownFromURL(t *testing.T) {
 			_, _ = w.Write([]byte("# 链接文档\n\n来自 URL 的内容 **加粗**。\n"))
 		case "/docs/blank.md":
 			_, _ = w.Write([]byte("  \n \t"))
+		case "/docs/private.md":
+			w.WriteHeader(http.StatusForbidden)
+			_, _ = w.Write([]byte("forbidden"))
 		default:
 			http.NotFound(w, r)
 		}
@@ -732,6 +735,8 @@ func TestMarkdownFromURL(t *testing.T) {
 		code   string
 	}{
 		{"not found", src.URL + "/docs/missing.md", http.StatusBadGateway, "fetch_failed"},
+		{"forbidden", src.URL + "/docs/private.md", http.StatusBadGateway, "fetch_failed"},
+		{"connection refused", "http://127.0.0.1:1/doc.md", http.StatusBadGateway, "fetch_failed"},
 		{"blank document", src.URL + "/docs/blank.md", http.StatusBadRequest, "empty_document"},
 		{"bad scheme", "ftp://example.com/a.md", http.StatusBadRequest, "bad_url"},
 		{"not a url", "example.com/readme.md", http.StatusBadRequest, "bad_url"},
